@@ -1,0 +1,163 @@
+{% comment %}
+  Countdown Sale Timer Bar - Theme App Extension Block
+{% endcomment %}
+
+<div
+  id="countdown-bar-{{ block.id }}"
+  class="countdown-bar"
+  data-end-date="{{ block.settings.end_date }}"
+  data-expired-text="{{ block.settings.expired_text }}"
+  style="
+    --bg-color: {{ block.settings.bg_color }};
+    --text-color: {{ block.settings.text_color }};
+  "
+  {{ block.shopify_attributes }}
+>
+  <p class="countdown-bar__message">{{ block.settings.message }}</p>
+  <div class="countdown-bar__timer">
+    <span class="countdown-bar__unit"><span class="countdown-bar__value" data-days>00</span><span class="countdown-bar__label">d</span></span>
+    <span class="countdown-bar__unit"><span class="countdown-bar__value" data-hours>00</span><span class="countdown-bar__label">h</span></span>
+    <span class="countdown-bar__unit"><span class="countdown-bar__value" data-minutes>00</span><span class="countdown-bar__label">m</span></span>
+    <span class="countdown-bar__unit"><span class="countdown-bar__value" data-seconds>00</span><span class="countdown-bar__label">s</span></span>
+  </div>
+</div>
+
+<style>
+  .countdown-bar {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 16px;
+    padding: 10px 16px;
+    background: var(--bg-color, #1a1a1a);
+    color: var(--text-color, #ffffff);
+    font-family: inherit;
+    flex-wrap: wrap;
+    text-align: center;
+  }
+  .countdown-bar__message {
+    margin: 0;
+    font-size: 14px;
+    font-weight: 600;
+  }
+  .countdown-bar__timer {
+    display: flex;
+    gap: 8px;
+  }
+  .countdown-bar__unit {
+    display: flex;
+    align-items: baseline;
+    gap: 2px;
+    background: rgba(255, 255, 255, 0.15);
+    padding: 2px 6px;
+    border-radius: 4px;
+    min-width: 32px;
+    justify-content: center;
+  }
+  .countdown-bar__value {
+    font-size: 14px;
+    font-weight: 700;
+  }
+  .countdown-bar__label {
+    font-size: 11px;
+    opacity: 0.8;
+  }
+  .countdown-bar.is-expired {
+    display: none;
+  }
+  @media (max-width: 480px) {
+    .countdown-bar {
+      flex-direction: column;
+      gap: 8px;
+    }
+  }
+</style>
+
+<script>
+  (function () {
+    var bar = document.getElementById("countdown-bar-{{ block.id }}");
+    if (!bar) return;
+
+    var endDate = new Date(bar.getAttribute("data-end-date")).getTime();
+    var expiredText = bar.getAttribute("data-expired-text");
+    var daysEl = bar.querySelector("[data-days]");
+    var hoursEl = bar.querySelector("[data-hours]");
+    var minutesEl = bar.querySelector("[data-minutes]");
+    var secondsEl = bar.querySelector("[data-seconds]");
+    var messageEl = bar.querySelector(".countdown-bar__message");
+
+    function pad(n) {
+      return String(n).padStart(2, "0");
+    }
+
+    function tick() {
+      var now = new Date().getTime();
+      var diff = endDate - now;
+
+      if (isNaN(endDate) || diff <= 0) {
+        clearInterval(timer);
+        if (expiredText && expiredText.trim().length > 0) {
+          if (messageEl) messageEl.textContent = expiredText;
+          var timerWrap = bar.querySelector(".countdown-bar__timer");
+          if (timerWrap) timerWrap.style.display = "none";
+        } else {
+          bar.classList.add("is-expired");
+        }
+        return;
+      }
+
+      var days = Math.floor(diff / (1000 * 60 * 60 * 24));
+      var hours = Math.floor((diff / (1000 * 60 * 60)) % 24);
+      var minutes = Math.floor((diff / (1000 * 60)) % 60);
+      var seconds = Math.floor((diff / 1000) % 60);
+
+      if (daysEl) daysEl.textContent = pad(days);
+      if (hoursEl) hoursEl.textContent = pad(hours);
+      if (minutesEl) minutesEl.textContent = pad(minutes);
+      if (secondsEl) secondsEl.textContent = pad(seconds);
+    }
+
+    tick();
+    var timer = setInterval(tick, 1000);
+  })();
+</script>
+
+{% schema %}
+{
+  "name": "Countdown Sale Timer",
+  "target": "section",
+  "settings": [
+    {
+      "type": "text",
+      "id": "message",
+      "label": "Message",
+      "default": "Sale ends in:"
+    },
+    {
+      "type": "text",
+      "id": "end_date",
+      "label": "End date & time (format: YYYY-MM-DDTHH:MM:SS)",
+      "default": "2026-12-31T23:59:59",
+      "info": "Example: 2026-12-31T23:59:59"
+    },
+    {
+      "type": "text",
+      "id": "expired_text",
+      "label": "Text to show after countdown ends (leave blank to hide bar)",
+      "default": "Sale has ended!"
+    },
+    {
+      "type": "color",
+      "id": "bg_color",
+      "label": "Background color",
+      "default": "#1a1a1a"
+    },
+    {
+      "type": "color",
+      "id": "text_color",
+      "label": "Text color",
+      "default": "#ffffff"
+    }
+  ]
+}
+{% endschema %}
