@@ -24,6 +24,12 @@
 
 <style>
   .countdown-bar {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    z-index: 9999;
+    box-sizing: border-box;
     display: flex;
     align-items: center;
     justify-content: center;
@@ -90,6 +96,11 @@
       return String(n).padStart(2, "0");
     }
 
+    function adjustBodyPadding() {
+      var height = bar.offsetHeight;
+      document.body.style.paddingTop = height + "px";
+    }
+
     function tick() {
       var now = new Date().getTime();
       var diff = endDate - now;
@@ -102,7 +113,9 @@
           if (timerWrap) timerWrap.style.display = "none";
         } else {
           bar.classList.add("is-expired");
+          document.body.style.paddingTop = "0px";
         }
+        adjustBodyPadding();
         return;
       }
 
@@ -117,6 +130,8 @@
       if (secondsEl) secondsEl.textContent = pad(seconds);
     }
 
+    adjustBodyPadding();
+    window.addEventListener("resize", adjustBodyPadding);
     tick();
     var timer = setInterval(tick, 1000);
   })();
@@ -125,7 +140,7 @@
 {% schema %}
 {
   "name": "Countdown Sale Timer",
-  "target": "section",
+  "target": "body",
   "settings": [
     {
       "type": "text",

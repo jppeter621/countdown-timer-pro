@@ -1,7 +1,7 @@
 # Learn more about configuring your app at https://shopify.dev/docs/apps/tools/cli/configuration
 
 client_id = "d27d2c007d509ae9559fd1eff5b3fec3"
-application_url = "https://example.com"
+application_url = "https://countdown-timer-pro-dun.vercel.app"
 embedded = true
 name = "countdown-timer-pro"
 
@@ -44,8 +44,12 @@ api_version = "2026-10"
   uri = "/webhooks/app/scopes_update"
   topics = [ "app/scopes_update" ]
 
+  [[webhooks.subscriptions]]
+  compliance_topics = [ "customers/data_request", "customers/redact", "shop/redact" ]
+  uri = "/webhooks/compliance"
+
 [auth]
-redirect_urls = [ "https://example.com/api/auth" ]
+redirect_urls = [ "https://countdown-timer-pro-dun.vercel.app/auth/callback" ]
 
 [build]
 automatically_update_urls_on_dev = true
