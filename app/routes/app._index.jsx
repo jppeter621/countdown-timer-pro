@@ -1,18 +1,25 @@
+/* global process */
 import { useEffect } from "react";
 import { useFetcher, useLoaderData } from "react-router";
-import { useAppBridge } from "@shopify/app-bridge-react";
 import { boundary } from "@shopify/shopify-app-react-router/server";
 import { authenticate } from "../shopify.server";
 
+// Default is real charges. Set BILLING_IS_TEST=true in Vercel only while testing or during review.
+const isTestBilling = () => process.env.BILLING_IS_TEST === "true";
+
 export const loader = async ({ request }) => {
-  const { billing } = await authenticate.admin(request);
+  const { billing, session } = await authenticate.admin(request);
 
   const billingCheck = await billing.check({
     plans: ["monthlyPlan"],
-    isTest: false,
+    isTest: isTestBilling(),
   });
 
-  return { hasActivePayment: billingCheck.hasActivePayment };
+  return {
+    hasActivePayment: billingCheck.hasActivePayment,
+    shop: session.shop,
+    apiKey: process.env.SHOPIFY_API_KEY || "",
+  };
 };
 
 export const action = async ({ request }) => {
@@ -21,19 +28,18 @@ export const action = async ({ request }) => {
   try {
     return await billing.request({
       plan: "monthlyPlan",
-      isTest: false,
+      isTest: isTestBilling(),
       trialDays: 3,
     });
   } catch (error) {
-    console.error("🔴 BILLING ERROR:", JSON.stringify(error, null, 2));
+    console.error("BILLING ERROR:", JSON.stringify(error, null, 2));
     throw error;
   }
 };
 
 export default function Index() {
-  const { hasActivePayment } = useLoaderData();
+  const { hasActivePayment, shop, apiKey } = useLoaderData();
   const fetcher = useFetcher();
-  const shopify = useAppBridge();
   const isLoading = fetcher.state !== "idle";
 
   const subscribe = () => fetcher.submit({}, { method: "POST" });
@@ -43,6 +49,8 @@ export default function Index() {
       open(fetcher.data.confirmationUrl, "_top");
     }
   }, [fetcher.data]);
+
+  const themeEditorUrl = `https://${shop}/admin/themes/current/editor?context=apps&activateAppId=${apiKey}/countdown-timer`;
 
   if (!hasActivePayment) {
     return (
@@ -69,18 +77,29 @@ export default function Index() {
     <s-page heading="Countdown Sale Timer">
       <s-section heading="You're all set!">
         <s-paragraph>
-          Your subscription is active. To show the countdown bar on your
-          storefront:
+          Your subscription is active. To show the countdown bar at the top of
+          your storefront:
         </s-paragraph>
         <s-unordered-list>
-          <s-list-item>Go to Online Store - Themes - Customize</s-list-item>
           <s-list-item>
-            Click Add section and choose Countdown Sale Timer
+            Click the button below to open the theme editor with App embeds
           </s-list-item>
+          <s-list-item>Turn on the Countdown Sale Timer toggle</s-list-item>
           <s-list-item>
-            Set your end date and message, then click Save
+            Set your message, end date and colors, then click Save
           </s-list-item>
         </s-unordered-list>
+        <s-button variant="primary" href={themeEditorUrl} target="_blank">
+          Open theme editor
+        </s-button>
+      </s-section>
+
+      <s-section heading="Need help?">
+        <s-paragraph>
+          If the bar does not appear after you save, go to Online Store -
+          Themes - Customize, click the App embeds icon on the left, and make
+          sure Countdown Sale Timer is switched on.
+        </s-paragraph>
       </s-section>
     </s-page>
   );
